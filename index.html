@@ -35,10 +35,28 @@
           </div>
         </div>
 
-        <div id="slots" class="slots"></div>
+        <div id="load-slots" class="slots"></div>
 
         <div class="pagination">
-          <div id="page-buttons" class="page-buttons"></div>
+          <div id="load-page-buttons" class="page-buttons"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 存檔頁 -->
+    <section id="screen-save" class="screen hidden">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>存檔</h2>
+          <div class="panel-actions">
+            <button id="btn-save-back">返回</button>
+          </div>
+        </div>
+
+        <div id="save-slots" class="slots"></div>
+
+        <div class="pagination">
+          <div id="save-page-buttons" class="page-buttons"></div>
         </div>
       </div>
     </section>
@@ -55,8 +73,9 @@
           <div class="ui-top">
             <div id="name"></div>
             <div class="ui-actions">
+              <button id="btn-save">存檔</button>
+              <button id="btn-load-in-game">讀檔</button>
               <button id="btn-quick-save">快速存檔</button>
-              <button id="btn-open-load">讀檔</button>
               <button id="btn-to-title">回首頁</button>
             </div>
           </div>
