@@ -292,12 +292,16 @@ function renderSaveSlots(){
       slot: i,
       data,
       clickable: true,
-      onClick: async ()=> {
+      onClick: async () => {
+        // 1. 先在背景抓取目前的遊戲縮圖與資料 (在 confirm 彈出前執行)
+        const payload = await makePayload(); 
+        // 2. 抓好資料後，再詢問使用者是否要覆蓋
         const ok = confirm(`要覆蓋 ${saveTab === "quick" ? "Q.Save" : "Save"} Slot ${String(i).padStart(3,"0")} 嗎？`);
-        if(!ok) return;
-        const payload = await makePayload();
-        writeSlot(saveTab, i, payload);
-        renderSaveSlots();
+        if (ok) {
+          // 3. 使用者確認後，才正式寫入資料
+          writeSlot(saveTab, i, payload);
+          renderSaveSlots();
+        }
       }
     }));
   }
