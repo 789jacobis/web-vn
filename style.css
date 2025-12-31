@@ -1,0 +1,80 @@
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Arial, "Noto Sans TC", sans-serif;
+  background: #111;
+  color: #fff;
+}
+
+#game {
+  max-width: 980px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+#stage {
+  position: relative;
+  overflow: hidden;
+  background: #222;
+}
+
+#bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#ch {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 90%;
+  max-height: 720px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+#ui {
+  background: rgba(0,0,0,0.85);
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+
+#name {
+  font-weight: 700;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+#text {
+  line-height: 1.7;
+  min-height: 3.5em;
+  margin-bottom: 12px;
+}
+
+#choices {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.choice {
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.choice:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+#next {
+  padding: 10px 14px;
+  cursor: pointer;
+}
