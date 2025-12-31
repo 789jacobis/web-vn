@@ -155,27 +155,43 @@ async function makePayload(){
 async function captureStageThumbnail(){
   if(!window.html2canvas || !$stage) return null;
 
-  // ✅ 核心修正：如果遊戲畫面目前被隱藏了 (display: none)，html2canvas 會抓不到圖。
-  // 我們需要暫時讓它顯示出來，擷取完再恢復原狀。
-  const wasHidden = screens.game.classList.contains("hidden");
-  if (wasHidden) {
-    screens.game.classList.remove("hidden");
-    // 強制瀏覽器重繪，確保寬高不為 0
-    void screens.game.offsetWidth; 
-  }
+  // 如果 game 畫面被 showScreen 隱藏（display:none），先暫時讓它可被截圖
+  const gameEl = screens.game; // #screen-game
+  const wasHidden = gameEl.classList.contains("hidden");
+
+  // 暫存原本 style，等下還原
+  const prevStyle = {
+    position: gameEl.style.position,
+    left: gameEl.style.left,
+    top: gameEl.style.top,
+    opacity: gameEl.style.opacity,
+    pointerEvents: gameEl.style.pointerEvents,
+    visibility: gameEl.style.visibility
+  };
 
   try{
-    // 稍微等待 1~2 幀讓渲染完成
+    if(wasHidden){
+      // 讓它可渲染，但放到畫面外 + 透明，避免你看到「閃一下」
+      gameEl.classList.remove("hidden");
+      gameEl.style.position = "fixed";
+      gameEl.style.left = "-10000px";
+      gameEl.style.top = "0";
+      gameEl.style.opacity = "0";
+      gameEl.style.pointerEvents = "none";
+      gameEl.style.visibility = "visible";
+    }
+
+    // 等 1~2 幀，讓畫面完整 render
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
 
     const canvas = await html2canvas($stage, {
-      backgroundColor: null, 
-      scale: 1,              
+      backgroundColor: null,
+      scale: 1,
       useCORS: true
     });
 
-    // 縮圖處理邏輯
+    // 縮小，避免 localStorage 太大
     const targetW = 320;
     const ratio = canvas.height / canvas.width;
     const targetH = Math.round(targetW * ratio);
@@ -191,12 +207,17 @@ async function captureStageThumbnail(){
     console.warn("captureStageThumbnail failed:", e);
     return null;
   }finally{
-    // ✅ 擷取完畢後，如果原本是隱藏的，就把它藏回去
-    if (wasHidden) {
-      screens.game.classList.add("hidden");
-    }
+    // 還原畫面狀態
+    if(wasHidden) gameEl.classList.add("hidden");
+    gameEl.style.position = prevStyle.position;
+    gameEl.style.left = prevStyle.left;
+    gameEl.style.top = prevStyle.top;
+    gameEl.style.opacity = prevStyle.opacity;
+    gameEl.style.pointerEvents = prevStyle.pointerEvents;
+    gameEl.style.visibility = prevStyle.visibility;
   }
 }
+
 
 
 function keyFor(mode, slot){
