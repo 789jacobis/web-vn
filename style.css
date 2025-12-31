@@ -222,6 +222,10 @@ body{
   color: rgba(0,0,0,0.35);
   font-weight:800;
   font-size:12px;
+  
+  /* ✅新增：讓背景圖能當縮圖顯示 */
+  background-size: cover;
+  background-position: center;
 }
 
 .slot .time{
