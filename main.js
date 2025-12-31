@@ -1,9 +1,9 @@
 /********************
  * 設定：600 格存檔
  ********************/
-const SLOTS_TOTAL = 600;
+const SLOTS_TOTAL = 60;
 const PAGES = 10;
-const SLOTS_PER_PAGE = SLOTS_TOTAL / PAGES; // 60
+const SLOTS_PER_PAGE = SLOTS_TOTAL / PAGES; // 6
 const LS_PREFIX = "webvn_save_v2_"; // 版本升級：避免你舊 demo 的存檔結構衝突
 
 /********************
@@ -348,7 +348,7 @@ function renderSlots(kind) {
   host.innerHTML = "";
 
   const startSlotId = (page - 1) * SLOTS_PER_PAGE + 1;
-  const endSlotId = startSlotId + SLOTS_PER_PAGE - 1;
+  const endSlotId = Math.min(SLOTS_TOTAL, startSlotId + SLOTS_PER_PAGE - 1);
 
   for (let slotId = startSlotId; slotId <= endSlotId; slotId++) {
     const data = readSlot(slotId);
