@@ -153,21 +153,29 @@ async function makePayload(){
 }
 
 async function captureStageThumbnail(){
-  // html2canvas 會把 DOM 渲染成圖片
-  // ⚠️ GitHub Pages 上通常 OK；如果你之後加跨網域圖片，才需要額外處理
   if(!window.html2canvas || !$stage) return null;
 
+  // ✅ 核心修正：如果遊戲畫面目前被隱藏了 (display: none)，html2canvas 會抓不到圖。
+  // 我們需要暫時讓它顯示出來，擷取完再恢復原狀。
+  const wasHidden = screens.game.classList.contains("hidden");
+  if (wasHidden) {
+    screens.game.classList.remove("hidden");
+    // 強制瀏覽器重繪，確保寬高不為 0
+    void screens.game.offsetWidth; 
+  }
+
   try{
-    // ✅ 先讓畫面完整 render 1~2 幀再截
+    // 稍微等待 1~2 幀讓渲染完成
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
+
     const canvas = await html2canvas($stage, {
-      backgroundColor: null, // 透明背景（讓它比較像原畫面）
-      scale: 1,              // 先用 1，夠用、也比較省空間
+      backgroundColor: null, 
+      scale: 1,              
       useCORS: true
     });
 
-    // 把縮圖壓小一點，避免 localStorage 爆掉
+    // 縮圖處理邏輯
     const targetW = 320;
     const ratio = canvas.height / canvas.width;
     const targetH = Math.round(targetW * ratio);
@@ -178,11 +186,15 @@ async function captureStageThumbnail(){
     const ctx = out.getContext("2d");
     ctx.drawImage(canvas, 0, 0, targetW, targetH);
 
-    // jpeg 品質 0.6，大小比較安全
     return out.toDataURL("image/jpeg", 0.6);
   }catch(e){
     console.warn("captureStageThumbnail failed:", e);
     return null;
+  }finally{
+    // ✅ 擷取完畢後，如果原本是隱藏的，就把它藏回去
+    if (wasHidden) {
+      screens.game.classList.add("hidden");
+    }
   }
 }
 
