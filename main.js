@@ -158,6 +158,9 @@ async function captureStageThumbnail(){
   if(!window.html2canvas || !$stage) return null;
 
   try{
+    // ✅ 先讓畫面完整 render 1~2 幀再截
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
     const canvas = await html2canvas($stage, {
       backgroundColor: null, // 透明背景（讓它比較像原畫面）
       scale: 1,              // 先用 1，夠用、也比較省空間
@@ -311,15 +314,25 @@ function makeSlotCard({ mode, slot, data, clickable, onClick }){
   no.className = "slot-no";
   no.textContent = String(slot).padStart(3, "0");
 
-  const thumb = document.createElement("div");
-  thumb.className = "thumb";
-  if(data && data.thumb){
-    thumb.textContent = "";
-    thumb.style.backgroundImage = `url("${data.thumb}")`;
-  }else{
-    thumb.style.backgroundImage = "";
-    thumb.textContent = data ? "Preview" : "Empty";
-  }
+const thumb = document.createElement("div");
+thumb.className = "thumb";
+
+// ✅ 每次先清乾淨，避免殘留上一格的圖
+thumb.style.backgroundImage = "";
+thumb.textContent = "";
+
+// ✅ 有存檔且有縮圖 → 顯示縮圖
+if (data && data.thumb) {
+  thumb.style.backgroundImage = `url(${data.thumb})`;
+}
+// ✅ 有存檔但沒有縮圖 → 顯示 Preview
+else if (data) {
+  thumb.textContent = "Preview";
+}
+// ✅ 完全沒有存檔 → 顯示 Empty
+else {
+  thumb.textContent = "Empty";
+}
 
 
   const time = document.createElement("div");
@@ -359,14 +372,28 @@ function makeSlotCard({ mode, slot, data, clickable, onClick }){
  * 若全滿 → 覆蓋第 1 格（你也可改成覆蓋最舊）
  ***********************/
 async function quickSave(){
-  let target = 1;
+  // 先抓出 1~12 的資料
+  const slots = [];
   for(let i=1;i<=QUICK_SLOTS;i++){
-    if(!readSlot("quick", i)){ target = i; break; }
+    const data = readSlot("quick", i);
+    slots.push({ i, data });
   }
-  const payload = await makePayload();
+
+  // 先找空格
+  let target = slots.find(s => !s.data)?.i;
+
+  // 都滿了就覆蓋最舊（ts 最小）
+  if(!target){
+    slots.sort((a,b) => (a.data?.ts ?? 0) - (b.data?.ts ?? 0));
+    target = slots[0].i;
+  }
+
+  const payload = await makePayload(); // 可能 thumb 會是 null，但也照樣可存
   writeSlot("quick", target, payload);
+
   alert(`已快速存檔到 Q.Save ${String(target).padStart(3,"0")}`);
 }
+
 
 /***********************
  * Wire buttons
