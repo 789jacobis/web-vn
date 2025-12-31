@@ -59,6 +59,8 @@ const $uiName = document.querySelector("#ui-name");
 const $uiText = document.querySelector("#ui-text");
 const $uiChoices = document.querySelector("#ui-choices");
 const $btnNext = document.querySelector("#btn-next");
+const $stage = document.querySelector("#screen-game .stage");
+
 
 function clearChoices(){ $uiChoices.innerHTML = ""; }
 
@@ -131,9 +133,12 @@ function clip(s, n=44){
   const t = String(s ?? "").trim().replace(/\s+/g," ");
   return t.length <= n ? t : t.slice(0,n) + "…";
 }
-function makePayload(){
+async function makePayload(){
+  const thumb = await captureStageThumbnail();
+
   return {
     ts: Date.now(),
+    thumb, // ✅新增：縮圖 base64
     meta: {
       label: state.label,
       speaker: clip(state.lastLine.name, 12),
@@ -141,11 +146,44 @@ function makePayload(){
     },
     state: {
       label: state.label,
-      index: state.index,     // index 是「下一句」，我們會讀回並顯示 index-1 那句
+      index: state.index,
       lastLine: state.lastLine
     }
   };
 }
+
+async function captureStageThumbnail(){
+  // html2canvas 會把 DOM 渲染成圖片
+  // ⚠️ GitHub Pages 上通常 OK；如果你之後加跨網域圖片，才需要額外處理
+  if(!window.html2canvas || !$stage) return null;
+
+  try{
+    const canvas = await html2canvas($stage, {
+      backgroundColor: null, // 透明背景（讓它比較像原畫面）
+      scale: 1,              // 先用 1，夠用、也比較省空間
+      useCORS: true
+    });
+
+    // 把縮圖壓小一點，避免 localStorage 爆掉
+    const targetW = 320;
+    const ratio = canvas.height / canvas.width;
+    const targetH = Math.round(targetW * ratio);
+
+    const out = document.createElement("canvas");
+    out.width = targetW;
+    out.height = targetH;
+    const ctx = out.getContext("2d");
+    ctx.drawImage(canvas, 0, 0, targetW, targetH);
+
+    // jpeg 品質 0.6，大小比較安全
+    return out.toDataURL("image/jpeg", 0.6);
+  }catch(e){
+    console.warn("captureStageThumbnail failed:", e);
+    return null;
+  }
+}
+
+
 function keyFor(mode, slot){
   return (mode === "quick" ? KEY_QUICK : KEY_NORMAL) + slot;
 }
@@ -251,10 +289,11 @@ function renderSaveSlots(){
       slot: i,
       data,
       clickable: true,
-      onClick: ()=> {
+      onClick: async ()=> {
         const ok = confirm(`要覆蓋 ${saveTab === "quick" ? "Q.Save" : "Save"} Slot ${String(i).padStart(3,"0")} 嗎？`);
         if(!ok) return;
-        writeSlot(saveTab, i, makePayload());
+        const payload = await makePayload();
+        writeSlot(saveTab, i, payload);
         renderSaveSlots();
       }
     }));
@@ -274,7 +313,14 @@ function makeSlotCard({ mode, slot, data, clickable, onClick }){
 
   const thumb = document.createElement("div");
   thumb.className = "thumb";
-  thumb.textContent = data ? "Preview" : "Empty";
+  if(data && data.thumb){
+    thumb.textContent = "";
+    thumb.style.backgroundImage = `url("${data.thumb}")`;
+  }else{
+    thumb.style.backgroundImage = "";
+    thumb.textContent = data ? "Preview" : "Empty";
+  }
+
 
   const time = document.createElement("div");
   time.className = "time";
@@ -312,14 +358,13 @@ function makeSlotCard({ mode, slot, data, clickable, onClick }){
  * 規則：如果有空格 → 填第一個空格
  * 若全滿 → 覆蓋第 1 格（你也可改成覆蓋最舊）
  ***********************/
-function quickSave(){
-  // 存到 quick 區
+async function quickSave(){
   let target = 1;
   for(let i=1;i<=QUICK_SLOTS;i++){
     if(!readSlot("quick", i)){ target = i; break; }
   }
-  // 若全部都有，就覆蓋 1（簡單版）
-  writeSlot("quick", target, makePayload());
+  const payload = await makePayload();
+  writeSlot("quick", target, payload);
   alert(`已快速存檔到 Q.Save ${String(target).padStart(3,"0")}`);
 }
 
