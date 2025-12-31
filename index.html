@@ -7,18 +7,67 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="game">
-    <div id="stage">
-      <img id="bg" alt="background" />
-      <img id="ch" alt="character" />
-    </div>
+  <div id="app">
 
-    <div id="ui">
-      <div id="name"></div>
-      <div id="text"></div>
-      <div id="choices"></div>
-      <button id="next">下一句</button>
-    </div>
+    <!-- 首頁 -->
+    <section id="screen-title" class="screen">
+      <div class="title-wrap">
+        <h1 class="game-title">我的視覺小說</h1>
+
+        <div class="menu">
+          <button class="menu-btn" id="btn-start">開始</button>
+          <button class="menu-btn" id="btn-load">加載</button>
+          <button class="menu-btn" id="btn-settings" disabled>設定（待做）</button>
+          <button class="menu-btn" id="btn-about" disabled>關於（待做）</button>
+          <button class="menu-btn" id="btn-help" disabled>說明（待做）</button>
+          <button class="menu-btn" id="btn-exit">離開</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 加載頁 -->
+    <section id="screen-load" class="screen hidden">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>加載</h2>
+          <div class="panel-actions">
+            <button id="btn-load-back">返回</button>
+          </div>
+        </div>
+
+        <div id="slots" class="slots"></div>
+
+        <div class="pagination">
+          <div id="page-buttons" class="page-buttons"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 遊戲畫面 -->
+    <section id="screen-game" class="screen hidden">
+      <div id="game">
+        <div id="stage">
+          <img id="bg" alt="background" />
+          <img id="ch" alt="character" />
+        </div>
+
+        <div id="ui">
+          <div class="ui-top">
+            <div id="name"></div>
+            <div class="ui-actions">
+              <button id="btn-quick-save">快速存檔</button>
+              <button id="btn-open-load">讀檔</button>
+              <button id="btn-to-title">回首頁</button>
+            </div>
+          </div>
+
+          <div id="text"></div>
+          <div id="choices"></div>
+          <button id="next">下一句</button>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <script src="main.js"></script>
