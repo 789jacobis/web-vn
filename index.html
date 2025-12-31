@@ -3,86 +3,125 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>我的網頁視覺小說</title>
+  <title>Web VN Demo</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
 
-    <!-- 首頁 -->
+    <!-- TITLE -->
     <section id="screen-title" class="screen">
-      <div class="title-wrap">
-        <h1 class="game-title">我的視覺小說</h1>
+      <div class="title-hero">
+        <div class="title-badge">
+          <div class="title-logo">Web VN</div>
+          <div class="title-sub">小型網頁視覺小說 Demo</div>
+        </div>
 
-        <div class="menu">
-          <button class="menu-btn" id="btn-start">開始</button>
-          <button class="menu-btn" id="btn-load">加載</button>
-          <button class="menu-btn" id="btn-settings" disabled>設定（待做）</button>
-          <button class="menu-btn" id="btn-about" disabled>關於（待做）</button>
-          <button class="menu-btn" id="btn-help" disabled>說明（待做）</button>
-          <button class="menu-btn" id="btn-exit">離開</button>
+        <div class="title-menu">
+          <button class="btn primary" id="btn-start">開始遊戲</button>
+          <button class="btn" id="btn-open-load">讀取進度</button>
+          <button class="btn" disabled>遊戲設定（先不做）</button>
+          <button class="btn" id="btn-open-credits">製作名單</button>
+          <button class="btn" id="btn-exit" disabled>離開遊戲（先不做）</button>
+        </div>
+
+        <div class="title-footer">
+          <span>Tip：進遊戲後可用「存檔 / 快速存檔」產生存檔，再回來讀。</span>
         </div>
       </div>
     </section>
 
-    <!-- 加載頁 -->
+    <!-- LOAD -->
     <section id="screen-load" class="screen hidden">
       <div class="panel">
-        <div class="panel-header">
-          <h2>加載</h2>
-          <div class="panel-actions">
-            <button id="btn-load-back">返回</button>
+        <div class="panel-top">
+          <div class="panel-title">
+            <div id="load-page-label" class="panel-label">Load</div>
           </div>
+
+          <div class="panel-tabs">
+            <button class="tab active" data-tab="normal">Load</button>
+            <button class="tab" data-tab="quick">Q.Load</button>
+          </div>
+
+          <button class="close" id="btn-close-load" aria-label="close">✕</button>
         </div>
 
-        <div id="load-slots" class="slots"></div>
+        <div id="slot-grid" class="slot-grid"></div>
 
-        <div class="pagination">
-          <div id="load-page-buttons" class="page-buttons"></div>
+        <div class="panel-bottom">
+          <div id="load-hint" class="hint">這裡是一般存檔喔！</div>
         </div>
       </div>
     </section>
 
-    <!-- 存檔頁 -->
+    <!-- SAVE (for writing saves) -->
     <section id="screen-save" class="screen hidden">
       <div class="panel">
-        <div class="panel-header">
-          <h2>存檔</h2>
-          <div class="panel-actions">
-            <button id="btn-save-back">返回</button>
+        <div class="panel-top">
+          <div class="panel-title">
+            <div id="save-page-label" class="panel-label">Save</div>
           </div>
+
+          <div class="panel-tabs">
+            <button class="tab active" data-save-tab="normal">Save</button>
+            <button class="tab" data-save-tab="quick">Q.Save</button>
+          </div>
+
+          <button class="close" id="btn-close-save" aria-label="close">✕</button>
         </div>
 
-        <div id="save-slots" class="slots"></div>
+        <div class="save-help">
+          點任一格存檔（可覆蓋）。<span class="muted">Q.Save 代表快速存檔區。</span>
+        </div>
 
-        <div class="pagination">
-          <div id="save-page-buttons" class="page-buttons"></div>
+        <div id="save-grid" class="slot-grid"></div>
+
+        <div class="panel-bottom">
+          <div id="save-hint" class="hint">這裡是一般存檔喔！</div>
         </div>
       </div>
     </section>
 
-    <!-- 遊戲畫面 -->
+    <!-- CREDITS -->
+    <section id="screen-credits" class="screen hidden">
+      <div class="credits">
+        <h2>製作名單</h2>
+        <ul>
+          <li>企劃：Aoi</li>
+          <li>劇本：Yuki</li>
+          <li>美術：Hana</li>
+          <li>程式：Mika</li>
+          <li>音效：Ren</li>
+        </ul>
+        <button class="btn" id="btn-back-title-1">返回</button>
+      </div>
+    </section>
+
+    <!-- GAME -->
     <section id="screen-game" class="screen hidden">
-      <div id="game">
-        <div id="stage">
-          <img id="bg" alt="background" />
-          <img id="ch" alt="character" />
+      <div class="game">
+        <div class="stage">
+          <div class="fake-bg"></div>
+          <div class="stage-overlay"></div>
         </div>
 
-        <div id="ui">
-          <div class="ui-top">
-            <div id="name"></div>
-            <div class="ui-actions">
-              <button id="btn-save">存檔</button>
-              <button id="btn-load-in-game">讀檔</button>
-              <button id="btn-quick-save">快速存檔</button>
-              <button id="btn-to-title">回首頁</button>
+        <div class="hud">
+          <div class="hud-top">
+            <div class="name" id="ui-name">旁白</div>
+            <div class="hud-actions">
+              <button class="mini" id="btn-open-save">存檔</button>
+              <button class="mini" id="btn-quick-save">快速存檔</button>
+              <button class="mini" id="btn-open-load-2">讀檔</button>
+              <button class="mini" id="btn-back-title-2">回首頁</button>
             </div>
           </div>
 
-          <div id="text"></div>
-          <div id="choices"></div>
-          <button id="next">下一句</button>
+          <div class="text" id="ui-text"></div>
+
+          <div class="choices" id="ui-choices"></div>
+
+          <button class="btn next" id="btn-next">下一句</button>
         </div>
       </div>
     </section>
