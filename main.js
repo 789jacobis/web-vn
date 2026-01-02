@@ -92,11 +92,44 @@ function step(){
 }
 
 function renderNode(node){
+  // 這段保持不變，它是正確的
   if(node.jump){
     state.label = node.jump;
     state.index = 0;
     return step();
   }
+  
+  const name = node.name ?? "";
+  const text = node.text ?? "";
+
+  $uiName.textContent = name;
+  
+  // 開始打字效果
+  startTyping(text);
+  state.lastLine = { name, text };
+
+  clearChoices();
+
+  if(node.choices && node.choices.length){
+    $btnNext.style.display = "none";
+    node.choices.forEach(c=>{
+      const btn = document.createElement("button");
+      btn.className = "choice";
+      btn.textContent = c.label;
+      btn.addEventListener("click", ()=>{
+        // ✅ 修正：點擊選項時必須先強制停止打字機
+        completeTyping(); 
+        
+        state.label = c.jump;
+        state.index = 0;
+        step();
+      });
+      $uiChoices.appendChild(btn);
+    });
+  }else{
+    $btnNext.style.display = "inline-block";
+  }
+}
   
   const name = node.name ?? "";
   const text = node.text ?? "";
@@ -128,8 +161,9 @@ $uiName.textContent = name;
 
 
 function startTyping(text) {
-  // 1. 清除之前的計時器並重設狀態
-  cancelAnimationFrame(typingTimer);
+  // ✅ 修正：使用 clearTimeout 才能停止 setTimeout
+  if (typingTimer) clearTimeout(typingTimer); 
+  
   isTyping = true;
   currentFullText = text;
   $uiText.textContent = ""; 
@@ -142,6 +176,7 @@ function startTyping(text) {
       typingTimer = setTimeout(type, TEXT_SPEED);
     } else {
       isTyping = false;
+      typingTimer = null;
     }
   }
   type();
