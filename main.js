@@ -4,14 +4,15 @@
 const NORMAL_SLOTS = 12;
 const QUICK_SLOTS = 12;
 
-// 存檔 key 前綴：兩套分開
+// 存檔 key 前綴
 const KEY_NORMAL = "webvn_save_normal_";
 const KEY_QUICK  = "webvn_save_quick_";
-const TEXT_SPEED = 50; // ✅ 新增：每隔 50ms 跑一個字
 
-let isTyping = false;   // ✅ 新增：紀錄目前是否正在打字中
-let typingTimer = null; // ✅ 新增：計時器，用來停止打字動畫
-let currentFullText = ""; // ✅ 新增：儲存目前應該顯示的完整全文
+// 打字機設定
+const TEXT_SPEED = 50; 
+let isTyping = false;   
+let typingTimer = null; 
+let currentFullText = ""; 
 
 /***********************
  * SCREENS
@@ -56,8 +57,8 @@ const story = {
 
 let state = {
   label: "start",
-  index: 0,          // 下一次 step 要讀的 index
-  lastLine: { name:"", text:"" } // 當下畫面那句（用來做摘要）
+  index: 0,          
+  lastLine: { name:"", text:"" } 
 };
 
 const $uiName = document.querySelector("#ui-name");
@@ -65,7 +66,6 @@ const $uiText = document.querySelector("#ui-text");
 const $uiChoices = document.querySelector("#ui-choices");
 const $btnNext = document.querySelector("#btn-next");
 const $stage = document.querySelector("#screen-game .stage");
-
 
 function clearChoices(){ $uiChoices.innerHTML = ""; }
 
@@ -91,8 +91,8 @@ function step(){
   renderNode(node);
 }
 
+// ✅ 整合修正後的 renderNode
 function renderNode(node){
-  // 這段保持不變，它是正確的
   if(node.jump){
     state.label = node.jump;
     state.index = 0;
@@ -103,9 +103,7 @@ function renderNode(node){
   const text = node.text ?? "";
 
   $uiName.textContent = name;
-  
-  // 開始打字效果
-  startTyping(text);
+  startTyping(text); // 啟動打字機
   state.lastLine = { name, text };
 
   clearChoices();
@@ -117,37 +115,7 @@ function renderNode(node){
       btn.className = "choice";
       btn.textContent = c.label;
       btn.addEventListener("click", ()=>{
-        // ✅ 修正：點擊選項時必須先強制停止打字機
-        completeTyping(); 
-        
-        state.label = c.jump;
-        state.index = 0;
-        step();
-      });
-      $uiChoices.appendChild(btn);
-    });
-  }else{
-    $btnNext.style.display = "inline-block";
-  }
-}
-  
-  const name = node.name ?? "";
-  const text = node.text ?? "";
-
-$uiName.textContent = name;
-  // ✅ 修改：改用打字機效果顯示
-  startTyping(text);
-  state.lastLine = { name, text };
-
-  clearChoices();
-
-  if(node.choices && node.choices.length){
-    $btnNext.style.display = "none";
-    node.choices.forEach(c=>{
-      const btn = document.createElement("button");
-      btn.className = "choice";
-      btn.textContent = c.label;
-      btn.addEventListener("click", ()=>{
+        completeTyping(); // 點擊選項前先停止打字
         state.label = c.jump;
         state.index = 0;
         step();
@@ -159,11 +127,9 @@ $uiName.textContent = name;
   }
 }
 
-
+// ✅ 修正後的打字機函式
 function startTyping(text) {
-  // ✅ 修正：使用 clearTimeout 才能停止 setTimeout
   if (typingTimer) clearTimeout(typingTimer); 
-  
   isTyping = true;
   currentFullText = text;
   $uiText.textContent = ""; 
@@ -182,13 +148,12 @@ function startTyping(text) {
   type();
 }
 
-// ✅ 新增：立即完成打字的函式
 function completeTyping() {
-  clearTimeout(typingTimer);
+  if (typingTimer) clearTimeout(typingTimer);
   $uiText.textContent = currentFullText;
   isTyping = false;
+  typingTimer = null;
 }
-
 
 /***********************
  * SAVE DATA
@@ -204,10 +169,9 @@ function clip(s, n=44){
 }
 async function makePayload(){
   const thumb = await captureStageThumbnail();
-
   return {
     ts: Date.now(),
-    thumb, // ✅新增：縮圖 base64
+    thumb,
     meta: {
       label: state.label,
       speaker: clip(state.lastLine.name, 12),
@@ -221,52 +185,38 @@ async function makePayload(){
   };
 }
 
+// ✅ 修正後的縮圖擷取 (解決 hidden 無法擷取的問題)
 async function captureStageThumbnail(){
   if(!window.html2canvas || !$stage) return null;
-
-  // ✅ 核心修正：如果遊戲畫面目前被隱藏了 (display: none)，html2canvas 會抓不到圖。
-  // 我們需要暫時讓它顯示出來，擷取完再恢復原狀。
   const wasHidden = screens.game.classList.contains("hidden");
   if (wasHidden) {
     screens.game.classList.remove("hidden");
-    // 強制瀏覽器重繪，確保寬高不為 0
     void screens.game.offsetWidth; 
   }
-
   try{
-    // 稍微等待 1~2 幀讓渲染完成
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
-
     const canvas = await html2canvas($stage, {
       backgroundColor: null, 
       scale: 1,              
       useCORS: true
     });
-
-    // 縮圖處理邏輯
     const targetW = 320;
     const ratio = canvas.height / canvas.width;
     const targetH = Math.round(targetW * ratio);
-
     const out = document.createElement("canvas");
     out.width = targetW;
     out.height = targetH;
     const ctx = out.getContext("2d");
     ctx.drawImage(canvas, 0, 0, targetW, targetH);
-
     return out.toDataURL("image/jpeg", 0.6);
   }catch(e){
     console.warn("captureStageThumbnail failed:", e);
     return null;
   }finally{
-    // ✅ 擷取完畢後，如果原本是隱藏的，就把它藏回去
-    if (wasHidden) {
-      screens.game.classList.add("hidden");
-    }
+    if (wasHidden) screens.game.classList.add("hidden");
   }
 }
-
 
 function keyFor(mode, slot){
   return (mode === "quick" ? KEY_QUICK : KEY_NORMAL) + slot;
@@ -281,10 +231,9 @@ function writeSlot(mode, slot, payload){
 }
 
 /***********************
- * LOAD UI (tabs + 12 slots)
+ * LOAD UI
  ***********************/
-let loadTab = "normal"; // "normal" | "quick"
-
+let loadTab = "normal"; 
 const $loadLabel = document.querySelector("#load-page-label");
 const $loadHint  = document.querySelector("#load-hint");
 const $slotGrid  = document.querySelector("#slot-grid");
@@ -292,7 +241,6 @@ const $slotGrid  = document.querySelector("#slot-grid");
 function applyLoadTabUI(){
   $loadLabel.textContent = (loadTab === "quick") ? "Q.Load" : "Load";
   $loadHint.textContent  = (loadTab === "quick") ? "這裡是快速存檔喔！" : "這裡是一般存檔喔！";
-
   document.querySelectorAll("#screen-load .tab[data-tab]").forEach(btn=>{
     const t = btn.getAttribute("data-tab");
     btn.classList.toggle("active", t === loadTab);
@@ -302,7 +250,6 @@ function applyLoadTabUI(){
 function renderLoadSlots(){
   applyLoadTabUI();
   $slotGrid.innerHTML = "";
-
   const total = (loadTab === "quick") ? QUICK_SLOTS : NORMAL_SLOTS;
   for(let i=1;i<=total;i++){
     const data = readSlot(loadTab, i);
@@ -313,38 +260,28 @@ function renderLoadSlots(){
       clickable: !!data,
       onClick: ()=> {
         if(!data) return alert("這個格子是空的。");
-        loadFrom(modeFromTab(loadTab), i);
+        loadFrom(loadTab, i);
       }
     }));
   }
 }
 
-function modeFromTab(tab){ return tab === "quick" ? "quick" : "normal"; }
-
 function loadFrom(mode, slot){
   const data = readSlot(mode, slot);
-  if(!data || !data.state){
-    alert("這個存檔是空的。");
-    return;
-  }
-
+  if(!data || !data.state) return alert("這個存檔是空的。");
   state.label = data.state.label;
   state.index = data.state.index;
   state.lastLine = data.state.lastLine ?? { name:"", text:"" };
-
-  // 讀檔後顯示「當時那一句」：index-1
   const scene = story[state.label];
   const shownIndex = Math.max(0, state.index - 1);
   const node = scene?.[shownIndex];
-
   showScreen("game");
-
   if(node) renderNode(node);
   else step();
 }
 
 /***********************
- * SAVE UI (manual overwrite)
+ * SAVE UI
  ***********************/
 let saveTab = "normal";
 const $saveLabel = document.querySelector("#save-page-label");
@@ -354,7 +291,6 @@ const $saveGrid  = document.querySelector("#save-grid");
 function applySaveTabUI(){
   $saveLabel.textContent = (saveTab === "quick") ? "Q.Save" : "Save";
   $saveHint.textContent  = (saveTab === "quick") ? "這裡是快速存檔喔！" : "這裡是一般存檔喔！";
-
   document.querySelectorAll("#screen-save .tab[data-save-tab]").forEach(btn=>{
     const t = btn.getAttribute("data-save-tab");
     btn.classList.toggle("active", t === saveTab);
@@ -364,7 +300,6 @@ function applySaveTabUI(){
 function renderSaveSlots(){
   applySaveTabUI();
   $saveGrid.innerHTML = "";
-
   const total = (saveTab === "quick") ? QUICK_SLOTS : NORMAL_SLOTS;
   for(let i=1;i<=total;i++){
     const data = readSlot(saveTab, i);
@@ -374,12 +309,10 @@ function renderSaveSlots(){
       data,
       clickable: true,
       onClick: async () => {
-        // 1. 先在背景抓取目前的遊戲縮圖與資料 (在 confirm 彈出前執行)
+        // ✅ 修正：先擷取 payload 再 confirm
         const payload = await makePayload(); 
-        // 2. 抓好資料後，再詢問使用者是否要覆蓋
         const ok = confirm(`要覆蓋 ${saveTab === "quick" ? "Q.Save" : "Save"} Slot ${String(i).padStart(3,"0")} 嗎？`);
         if (ok) {
-          // 3. 使用者確認後，才正式寫入資料
           writeSlot(saveTab, i, payload);
           renderSaveSlots();
         }
@@ -394,96 +327,43 @@ function renderSaveSlots(){
 function makeSlotCard({ mode, slot, data, clickable, onClick }){
   const card = document.createElement("div");
   card.className = "slot" + (data ? "" : " empty");
-
   const no = document.createElement("div");
   no.className = "slot-no";
   no.textContent = String(slot).padStart(3, "0");
-
-const thumb = document.createElement("div");
-thumb.className = "thumb";
-
-// ✅ 每次先清乾淨，避免殘留上一格的圖
-thumb.style.backgroundImage = "";
-thumb.textContent = "";
-
-// ✅ 有存檔且有縮圖 → 顯示縮圖
-if (data && data.thumb) {
-  thumb.style.backgroundImage = `url(${data.thumb})`;
-}
-// ✅ 有存檔但沒有縮圖 → 顯示 Preview
-else if (data) {
-  thumb.textContent = "Preview";
-}
-// ✅ 完全沒有存檔 → 顯示 Empty
-else {
-  thumb.textContent = "Empty";
-}
-
-
+  const thumb = document.createElement("div");
+  thumb.className = "thumb";
+  thumb.style.backgroundImage = (data && data.thumb) ? `url(${data.thumb})` : "";
+  thumb.textContent = data ? (data.thumb ? "" : "Preview") : "Empty";
   const time = document.createElement("div");
   time.className = "time";
   time.textContent = data ? nowString(data.ts) : "—";
-
   const meta = document.createElement("div");
   meta.className = "meta";
-  if(data){
-    meta.textContent = `章節：${data.meta?.label ?? "?"}　角色：${data.meta?.speaker ?? "?"}`;
-  }else{
-    meta.textContent = (mode === "quick") ? "快速存檔格" : "一般存檔格";
-  }
-
+  meta.textContent = data ? `章節：${data.meta?.label ?? "?"} 角色：${data.meta?.speaker ?? "?"}` : (mode === "quick" ? "快速存檔格" : "一般存檔格");
   const snip = document.createElement("div");
   snip.className = "snippet";
   snip.textContent = data ? `「${data.meta?.snippet ?? ""}」` : "（沒有存檔）";
-
-  card.appendChild(no);
-  card.appendChild(thumb);
-  card.appendChild(time);
-  card.appendChild(meta);
-  card.appendChild(snip);
-
-  if(clickable){
-    card.addEventListener("click", onClick);
-  }else{
-    card.addEventListener("click", ()=> alert("這個格子是空的。"));
-  }
-
+  card.append(no, thumb, time, meta, snip);
+  card.addEventListener("click", onClick);
   return card;
 }
 
-/***********************
- * Quick Save button behavior
- * 規則：如果有空格 → 填第一個空格
- * 若全滿 → 覆蓋第 1 格（你也可改成覆蓋最舊）
- ***********************/
 async function quickSave(){
-  // 先抓出 1~12 的資料
   const slots = [];
-  for(let i=1;i<=QUICK_SLOTS;i++){
-    const data = readSlot("quick", i);
-    slots.push({ i, data });
-  }
-
-  // 先找空格
+  for(let i=1;i<=QUICK_SLOTS;i++) slots.push({ i, data: readSlot("quick", i) });
   let target = slots.find(s => !s.data)?.i;
-
-  // 都滿了就覆蓋最舊（ts 最小）
   if(!target){
     slots.sort((a,b) => (a.data?.ts ?? 0) - (b.data?.ts ?? 0));
     target = slots[0].i;
   }
-
-  const payload = await makePayload(); // 可能 thumb 會是 null，但也照樣可存
+  const payload = await makePayload();
   writeSlot("quick", target, payload);
-
   alert(`已快速存檔到 Q.Save ${String(target).padStart(3,"0")}`);
 }
-
 
 /***********************
  * Wire buttons
  ***********************/
-// Title
 document.querySelector("#btn-start").addEventListener("click", ()=>{
   state = { label:"start", index:0, lastLine:{name:"", text:""} };
   showScreen("game");
@@ -495,52 +375,35 @@ document.querySelector("#btn-open-load").addEventListener("click", ()=>{
   renderLoadSlots();
 });
 document.querySelector("#btn-open-credits").addEventListener("click", ()=> showScreen("credits"));
-document.querySelector("#btn-exit").addEventListener("click", ()=>{
-  alert("網頁版無法直接『離開遊戲』。\n你可以用：Ctrl+W（關閉分頁）或 Alt+F4（關閉視窗）。");
-});
-
-// Credits back
+document.querySelector("#btn-exit").addEventListener("click", ()=> alert("請手動關閉分頁。"));
 document.querySelector("#btn-back-title-1").addEventListener("click", ()=> showScreen("title"));
 
-// Game
+// ✅ 修改後的下一句按鈕邏輯
 document.querySelector("#btn-next").addEventListener("click", () => {
-  if (isTyping) {
-    // 如果還在打字，就立即顯示全文
-    completeTyping();
-  } else {
-    // 如果已經打完了，才執行下一段劇情
-    step();
-  }
+  if (isTyping) completeTyping();
+  else step();
 });
 document.querySelector("#btn-back-title-2").addEventListener("click", ()=> showScreen("title"));
-
 document.querySelector("#btn-open-load-2").addEventListener("click", ()=>{
   loadTab = "normal";
   showScreen("load");
   renderLoadSlots();
 });
-
 document.querySelector("#btn-open-save").addEventListener("click", ()=>{
   saveTab = "normal";
   showScreen("save");
   renderSaveSlots();
 });
 document.querySelector("#btn-quick-save").addEventListener("click", quickSave);
-
-// Load close
 document.querySelector("#btn-close-load").addEventListener("click", ()=> showScreen("title"));
-// Save close
 document.querySelector("#btn-close-save").addEventListener("click", ()=> showScreen("game"));
 
-// Load tabs
 document.querySelectorAll("#screen-load .tab[data-tab]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     loadTab = btn.getAttribute("data-tab");
     renderLoadSlots();
   });
 });
-
-// Save tabs
 document.querySelectorAll("#screen-save .tab[data-save-tab]").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     saveTab = btn.getAttribute("data-save-tab");
@@ -548,7 +411,4 @@ document.querySelectorAll("#screen-save .tab[data-save-tab]").forEach(btn=>{
   });
 });
 
-/***********************
- * Init
- ***********************/
 showScreen("title");
