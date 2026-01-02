@@ -7,6 +7,11 @@ const QUICK_SLOTS = 12;
 // 存檔 key 前綴：兩套分開
 const KEY_NORMAL = "webvn_save_normal_";
 const KEY_QUICK  = "webvn_save_quick_";
+const TEXT_SPEED = 50; // ✅ 新增：每隔 50ms 跑一個字
+
+let isTyping = false;   // ✅ 新增：紀錄目前是否正在打字中
+let typingTimer = null; // ✅ 新增：計時器，用來停止打字動畫
+let currentFullText = ""; // ✅ 新增：儲存目前應該顯示的完整全文
 
 /***********************
  * SCREENS
@@ -92,13 +97,13 @@ function renderNode(node){
     state.index = 0;
     return step();
   }
-
+  
   const name = node.name ?? "";
   const text = node.text ?? "";
 
-  $uiName.textContent = name;
-  $uiText.textContent = text;
-
+$uiName.textContent = name;
+  // ✅ 修改：改用打字機效果顯示
+  startTyping(text);
   state.lastLine = { name, text };
 
   clearChoices();
@@ -120,6 +125,35 @@ function renderNode(node){
     $btnNext.style.display = "inline-block";
   }
 }
+
+
+function startTyping(text) {
+  // 1. 清除之前的計時器並重設狀態
+  cancelAnimationFrame(typingTimer);
+  isTyping = true;
+  currentFullText = text;
+  $uiText.textContent = ""; 
+  
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      $uiText.textContent += text.charAt(i);
+      i++;
+      typingTimer = setTimeout(type, TEXT_SPEED);
+    } else {
+      isTyping = false;
+    }
+  }
+  type();
+}
+
+// ✅ 新增：立即完成打字的函式
+function completeTyping() {
+  clearTimeout(typingTimer);
+  $uiText.textContent = currentFullText;
+  isTyping = false;
+}
+
 
 /***********************
  * SAVE DATA
@@ -434,7 +468,15 @@ document.querySelector("#btn-exit").addEventListener("click", ()=>{
 document.querySelector("#btn-back-title-1").addEventListener("click", ()=> showScreen("title"));
 
 // Game
-document.querySelector("#btn-next").addEventListener("click", step);
+document.querySelector("#btn-next").addEventListener("click", () => {
+  if (isTyping) {
+    // 如果還在打字，就立即顯示全文
+    completeTyping();
+  } else {
+    // 如果已經打完了，才執行下一段劇情
+    step();
+  }
+});
 document.querySelector("#btn-back-title-2").addEventListener("click", ()=> showScreen("title"));
 
 document.querySelector("#btn-open-load-2").addEventListener("click", ()=>{
